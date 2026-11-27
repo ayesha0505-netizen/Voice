@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String              @id
+  email         String?             @unique
+  displayName   String?
+  photoURL      String?             @db.Text
+  avatarId      String              @default("avatar-01") @map("avatar_id")
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  profile       Profile?
+  practiceLogs  PracticeLog[]
+  userBadges    UserBadge[]
+  levelProgress UserLevelProgress[]
+
+  @@map("users")
+}
+
+model Profile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  level         Int      @default(1)
+  xp            Int      @default(0)
+  stars         Int      @default(0)
+  wordsMastered Int      @default(0)
+  streakDays    Int      @default(1)
+  lastActive    DateTime @default(now())
+
+  targetAccent  String   @default("en-US")
+  difficulty    String   @default("Beginner")
+  modelSpeed    Float    @default(1.0)
+
+  @@map("profiles")
+}
+
+model UserLevelProgress {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  level           Int
+  completedAt     DateTime @default(now()) @map("completed_at")
+  targetWord      String   @map("target_word")
+  transcript      String?  @db.Text
+  durationSeconds Int      @default(0) @map("duration_seconds")
+  accuracyScore   Int      @default(100) @map("accuracy_score")
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, level])
+  @@index([userId])
+  @@map("user_level_progress")
+}
+
+model PracticeLog {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  targetWord    String
+  spokenText    String   @db.Text
+  accuracyScore Int
+  createdAt     DateTime @default(now())
+
+  @@map("practice_logs")
+}
+
+model Badge {
+  id          String      @id @default(cuid())
+  code        String      @unique
+  title       String
+  description String      @db.Text
+  icon        String
+  userBadges  UserBadge[]
+
+  @@map("badges")
+}
+
+model UserBadge {
+  id         String   @id @default(cuid())
+  userId     String
+  badgeId    String
+  unlockedAt DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge      Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@map("user_badges")
+}
