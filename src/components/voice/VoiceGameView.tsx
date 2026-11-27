@@ -124,10 +124,20 @@ export function VoiceGameView({
   const [timeLeft, setTimeLeft] = useState<number>(targetDuration || 30);
   const [durationElapsed, setDurationElapsed] = useState<number>(0);
 
-  // Initial topic resolution
+  // Initial topic resolution (deterministic for SSR & Next.js prerender safety)
   const initialPool = getAllWordsList(levelOrTier || "Beginner");
-  const initialWord = getRandomGameWord(undefined, levelOrTier || "Beginner");
-  const initialIdx = initialPool.indexOf(initialWord.word);
+  const defaultWordName = initialPool[0] || "Coffee";
+  const initialWord = getWordDetails(defaultWordName) || {
+    word: defaultWordName,
+    stage: "Beginner",
+    category: "Everyday life",
+    exampleChallenge: `Tell us about ${defaultWordName}.`,
+    level: "A1",
+    tier: "Beginner",
+    whatToDiscuss: `Share your thoughts about ${defaultWordName}.`,
+    questions: [`What comes to mind when you think of ${defaultWordName}?`],
+  };
+  const initialIdx = 0;
 
   // Game state
   const [gameState, setGameState] = useState<GameState>("ready");
@@ -135,15 +145,25 @@ export function VoiceGameView({
   const [selectedWord, setSelectedWord] = useState<string>(initialWord.word);
   const [displayWord, setDisplayWord] = useState<string>(initialWord.word);
   const [prevWord, setPrevWord] = useState<string>(
-    initialIdx !== -1 && initialPool.length > 1
-      ? initialPool[(initialIdx - 1 + initialPool.length) % initialPool.length]
-      : ""
+    initialPool.length > 1 ? initialPool[initialPool.length - 1] : ""
   );
   const [nextWord, setNextWord] = useState<string>(
-    initialIdx !== -1 && initialPool.length > 1
-      ? initialPool[(initialIdx + 1) % initialPool.length]
-      : ""
+    initialPool.length > 1 ? initialPool[1] : ""
   );
+
+  // Randomize word on client mount to avoid Next.js static prerender blocking
+  useEffect(() => {
+    const randomWord = getRandomGameWord(undefined, levelOrTier || "Beginner");
+    const idx = initialPool.indexOf(randomWord.word);
+    setSelectedWordObj(randomWord);
+    setSelectedWord(randomWord.word);
+    setDisplayWord(randomWord.word);
+    targetWordRef.current = randomWord.word;
+    if (idx !== -1 && initialPool.length > 1) {
+      setPrevWord(initialPool[(idx - 1 + initialPool.length) % initialPool.length]);
+      setNextWord(initialPool[(idx + 1) % initialPool.length]);
+    }
+  }, []);
   const [micError, setMicError] = useState<string | null>(null);
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
 
