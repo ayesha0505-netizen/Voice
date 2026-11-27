@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   Eye, EyeOff, Mail, Lock, User, ArrowRight, ArrowLeft,
-  CheckCircle2, AlertCircle, ExternalLink, Sparkles
+  CheckCircle2, AlertCircle, ExternalLink
 } from "lucide-react";
 import {
   createUserWithEmailAndPassword,
@@ -59,14 +59,13 @@ export default function SignupPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [guestLoading, setGuestLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [isFirebaseConfigError, setIsFirebaseConfigError] = useState(false);
   const [success, setSuccess] = useState(false);
   const [fromQuery, setFromQuery] = useState<string | null>(null);
 
-  const { createSession, createGuestSession } = useFirebaseSession();
+  const { createSession } = useFirebaseSession();
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -156,7 +155,7 @@ export default function SignupPage() {
         msg.includes("configuration-not-found")
       ) {
         setIsFirebaseConfigError(true);
-        setError("Firebase Authentication is not activated in project voice-b3eea yet. Enable Email/Password in Firebase Console, or click Continue as Guest below.");
+        setError("Firebase Authentication is not activated in project voice-b3eea yet. Enable Email/Password in Firebase Console.");
       } else if (errCode === "auth/email-already-in-use" || msg.includes("email-already-in-use")) {
         setError("An account with this email already exists. Try signing in instead.");
       } else if (errCode === "auth/invalid-email" || msg.includes("invalid-email")) {
@@ -208,7 +207,7 @@ export default function SignupPage() {
 
       if (errCode === "auth/configuration-not-found" || msg.includes("configuration-not-found")) {
         setIsFirebaseConfigError(true);
-        setError("Firebase Authentication is not activated in project voice-b3eea yet. Enable Google Sign-In in Firebase Console, or click Continue as Guest below.");
+        setError("Firebase Authentication is not activated in project voice-b3eea yet. Enable Google Sign-In in Firebase Console.");
       } else if (errCode === "auth/popup-closed-by-user" || msg.includes("popup-closed")) {
         // User closed popup
       } else if (errCode === "auth/popup-blocked" || msg.includes("popup-blocked")) {
@@ -224,20 +223,6 @@ export default function SignupPage() {
       }
     } finally {
       setGoogleLoading(false);
-    }
-  };
-
-  const handleGuestSignUp = async () => {
-    setError(null);
-    setGuestLoading(true);
-    try {
-      await createGuestSession();
-      window.location.href = getTargetPath();
-    } catch (err) {
-      console.error("Guest signup error:", err);
-      setError("Unable to start guest session. Please try again.");
-    } finally {
-      setGuestLoading(false);
     }
   };
 
@@ -308,14 +293,6 @@ export default function SignupPage() {
                 >
                   Enable in Firebase Console <ExternalLink className="w-3.5 h-3.5" />
                 </a>
-                <button
-                  type="button"
-                  onClick={handleGuestSignUp}
-                  disabled={guestLoading}
-                  className="py-1 text-xs font-bold text-primary hover:underline text-center"
-                >
-                  Or continue instantly as Guest →
-                </button>
               </div>
             </div>
           )}
@@ -452,8 +429,8 @@ export default function SignupPage() {
             <div className="flex-1 h-px bg-outline-variant" />
           </div>
 
-          {/* Alternative Auth: Google & Guest */}
-          <div className="space-y-2.5">
+          {/* Alternative Auth: Google */}
+          <div>
             <button
               onClick={handleGoogleSignUp}
               disabled={googleLoading}
@@ -470,22 +447,6 @@ export default function SignupPage() {
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                   </svg>
                   Continue with Google
-                </>
-              )}
-            </button>
-
-            {/* Instant Guest Mode */}
-            <button
-              type="button"
-              onClick={handleGuestSignUp}
-              disabled={guestLoading}
-              className="w-full py-3 rounded-2xl bg-surface-container border border-primary/20 text-sm font-bold text-primary flex items-center justify-center gap-2 hover:bg-primary/10 transition-all disabled:opacity-60"
-            >
-              {guestLoading ? (
-                <span className="w-4 h-4 border-2 border-primary/40 border-t-primary rounded-full animate-spin" />
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" /> Continue as Guest (Instant Access)
                 </>
               )}
             </button>

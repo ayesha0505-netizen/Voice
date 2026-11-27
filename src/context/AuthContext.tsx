@@ -24,7 +24,6 @@ export interface AuthUser {
   displayName: string | null;
   photoURL: string | null;
   emailVerified: boolean;
-  isGuest?: boolean;
 }
 
 interface AuthContextType {
@@ -34,7 +33,6 @@ interface AuthContextType {
   isAuthenticated: boolean;
   signOutUser: () => Promise<void>;
   getIdToken: () => Promise<string | null>;
-  continueAsGuest: () => Promise<void>;
 }
 
 // ─── Public Routes (no auth required) ────────────────────────────────────────
@@ -50,27 +48,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
-  const [guestUser, setGuestUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
-
-  // Load guest session from localStorage on client mount
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("voice_guest_user");
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          if (parsed && parsed.uid) {
-            setGuestUser(parsed);
-          }
-        } catch {
-          // ignore parsing error
-        }
-      }
-    }
-  }, []);
 
   // Listen for Firebase Auth state changes
   useEffect(() => {
@@ -84,20 +64,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
 
       const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
-      const hasGuest = typeof window !== "undefined" && !!localStorage.getItem("voice_guest_user");
 
-      if (!fbUser && !hasGuest && !guestUser) {
+      if (!fbUser) {
         // If unauthenticated and on a protected route, route to login
         if (!isPublicRoute) {
           router.replace("/login");
         }
       } else if (fbUser) {
-        // Clear guest user state if authentic Firebase user signs in
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("voice_guest_user");
-        }
-        setGuestUser(null);
-
         // Ensure server-side session cookie is synced with client auth
         try {
           const idToken = await fbUser.getIdToken();
@@ -132,44 +105,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [pathname, router, guestUser]);
-
-  const continueAsGuest = useCallback(async () => {
-    const guestUid = "guest_" + Math.random().toString(36).substring(2, 9);
-    const guest: AuthUser = {
-      uid: guestUid,
-      email: "guest@voice.app",
-      displayName: "Guest Scholar",
-      photoURL: null,
-      emailVerified: true,
-      isGuest: true,
-    };
-    if (typeof window !== "undefined") {
-      localStorage.setItem("voice_guest_user", JSON.stringify(guest));
-    }
-    setGuestUser(guest);
-
-    await fetch("/api/auth/session", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ uid: guestUid }),
-    }).catch(() => {});
-
-    router.replace("/");
-  }, [router]);
+  }, [pathname, router]);
 
   const signOutUser = useCallback(async () => {
     try {
       if (auth) await signOut(auth);
       await fetch("/api/auth/session", { method: "DELETE" }).catch(() => {});
       if (typeof window !== "undefined") {
-        localStorage.removeItem("voice_guest_user");
         localStorage.removeItem("voice_portal_avatar_id");
         localStorage.removeItem("voice_settings_accent");
         localStorage.removeItem("voice_settings_difficulty");
         localStorage.removeItem("voice_settings_speed");
       }
-      setGuestUser(null);
       router.replace("/login");
     } catch (err) {
       console.error("Sign out error:", err);
@@ -193,7 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         photoURL: firebaseUser.photoURL,
         emailVerified: firebaseUser.emailVerified,
       }
-    : guestUser;
+    : null;
 
   return (
     <AuthContext.Provider
@@ -201,10 +148,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user: authUser,
         firebaseUser,
         isLoading,
-        isAuthenticated: !!firebaseUser || !!guestUser,
+        isAuthenticated: !!firebaseUser,
         signOutUser,
         getIdToken,
-        continueAsGuest,
       }}
     >
       {children}

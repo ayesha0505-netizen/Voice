@@ -11,13 +11,11 @@ import {
   X,
   CheckCircle2,
   RotateCw,
-  Sparkles,
 } from "lucide-react";
 import { GlassPanel } from "@/components/ui/GlassPanel";
 import { useAuth } from "@/context/AuthContext";
 import { auth } from "@/lib/firebase/client";
 import { updateProfile, sendPasswordResetEmail } from "firebase/auth";
-import Link from "next/link";
 import { validateUsername, USERNAME_POLICY } from "@/lib/validation/username";
 
 export function AccountSecurityCard() {
@@ -31,8 +29,6 @@ export function AccountSecurityCard() {
   const [resetLoading, setResetLoading] = useState(false);
   const [resetMessage, setResetMessage] = useState<string | null>(null);
   const [resetCooldown, setResetCooldown] = useState(0);
-
-  const isGuest = user?.isGuest || !user?.email || user.email.includes("guest@");
 
   const handleSaveName = async () => {
     const trimmed = nameInput.trim();
@@ -66,16 +62,6 @@ export function AccountSecurityCard() {
       if (auth?.currentUser) {
         await updateProfile(auth.currentUser, { displayName: trimmed }).catch(() => {});
       }
-      if (typeof window !== "undefined" && isGuest) {
-        const stored = localStorage.getItem("voice_guest_user");
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored);
-            parsed.displayName = trimmed;
-            localStorage.setItem("voice_guest_user", JSON.stringify(parsed));
-          } catch {}
-        }
-      }
       if (user?.uid) {
         fetch("/api/auth/sync", {
           method: "POST",
@@ -97,7 +83,7 @@ export function AccountSecurityCard() {
   };
 
   const handleSendPasswordReset = async () => {
-    if (!user?.email || isGuest) return;
+    if (!user?.email) return;
     setResetLoading(true);
     setResetMessage(null);
     try {
@@ -135,14 +121,8 @@ export function AccountSecurityCard() {
               Credentials, login email, and password security.
             </p>
           </div>
-          <span
-            className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full border ${
-              isGuest
-                ? "bg-amber-100/90 text-amber-800 border-amber-300"
-                : "bg-emerald-100/90 text-emerald-800 border-emerald-300"
-            }`}
-          >
-            {isGuest ? "Guest Mode" : "Verified Account"}
+          <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full border bg-emerald-100/90 text-emerald-800 border-emerald-300">
+            Verified Account
           </span>
         </div>
 
@@ -226,16 +206,16 @@ export function AccountSecurityCard() {
                 <Mail className="w-3.5 h-3.5 text-primary" /> Account Email
               </span>
               <span className="text-[10px] font-bold text-slate-600">
-                {isGuest ? "Temporary" : "Primary"}
+                Primary
               </span>
             </div>
 
             <div className="flex items-center justify-between">
               <span className="text-sm font-bold text-primary truncate" title={user?.email || "None"}>
-                {user?.email || (isGuest ? "guest@voice.app" : "Not configured")}
+                {user?.email || "Not configured"}
               </span>
               <span className="text-[10px] font-bold text-slate-600">
-                {isGuest ? "(Guest Session)" : "Active"}
+                Active
               </span>
             </div>
           </div>
@@ -249,9 +229,7 @@ export function AccountSecurityCard() {
             <KeyRound className="w-3.5 h-3.5 text-primary" /> Password &amp; Login Security
           </span>
           <p className="text-[11px] text-slate-600 font-medium leading-relaxed max-w-md">
-            {isGuest
-              ? "Sign in or create an account to permanently protect your progress."
-              : "Send a password reset link to your verified account email."}
+            Send a password reset link to your verified account email.
           </p>
           {resetMessage && (
             <div
@@ -272,32 +250,23 @@ export function AccountSecurityCard() {
         </div>
 
         <div className="shrink-0 flex items-center">
-          {isGuest ? (
-            <Link
-              href="/signup"
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary to-[#5b3ebf] text-white text-xs font-black flex items-center gap-1.5 shadow-md shadow-primary/25 hover:brightness-105 active:scale-95 transition-all whitespace-nowrap"
-            >
-              <Sparkles className="w-3.5 h-3.5" /> Sign Up / Save Account
-            </Link>
-          ) : (
-            <button
-              type="button"
-              onClick={handleSendPasswordReset}
-              disabled={resetLoading || resetCooldown > 0}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary to-[#5b3ebf] text-white text-xs font-black flex items-center gap-1.5 shadow-md shadow-primary/25 hover:brightness-105 active:scale-95 transition-all disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap cursor-pointer"
-            >
-              {resetLoading ? (
-                <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-              ) : (
-                <RotateCw className="w-3.5 h-3.5" />
-              )}
-              {resetLoading
-                ? "Sending Link..."
-                : resetCooldown > 0
-                ? `Resend in ${resetCooldown}s`
-                : "Send Reset Link"}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={handleSendPasswordReset}
+            disabled={resetLoading || resetCooldown > 0}
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary to-[#5b3ebf] text-white text-xs font-black flex items-center gap-1.5 shadow-md shadow-primary/25 hover:brightness-105 active:scale-95 transition-all disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap cursor-pointer"
+          >
+            {resetLoading ? (
+              <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+            ) : (
+              <RotateCw className="w-3.5 h-3.5" />
+            )}
+            {resetLoading
+              ? "Sending Link..."
+              : resetCooldown > 0
+              ? `Resend in ${resetCooldown}s`
+              : "Send Reset Link"}
+          </button>
         </div>
       </div>
     </GlassPanel>

@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   Eye, EyeOff, Mail, Lock, ArrowRight, ShieldCheck, Zap, Star,
-  AlertCircle, ExternalLink, Sparkles
+  AlertCircle, ExternalLink
 } from "lucide-react";
 import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase/client";
@@ -18,12 +18,11 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [guestLoading, setGuestLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isFirebaseConfigError, setIsFirebaseConfigError] = useState(false);
   const [fromQuery, setFromQuery] = useState<string | null>(null);
 
-  const { createSession, createGuestSession } = useFirebaseSession();
+  const { createSession } = useFirebaseSession();
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -86,7 +85,7 @@ export default function LoginPage() {
         msg.includes("configuration-not-found")
       ) {
         setIsFirebaseConfigError(true);
-        setError("Firebase Authentication is not activated in project voice-b3eea yet. Enable Email/Password in Firebase Console, or click Continue as Guest below.");
+        setError("Firebase Authentication is not activated in project voice-b3eea yet. Enable Email/Password in Firebase Console.");
       } else if (
         errCode === "auth/user-not-found" ||
         errCode === "auth/wrong-password" ||
@@ -145,7 +144,7 @@ export default function LoginPage() {
 
       if (errCode === "auth/configuration-not-found" || msg.includes("configuration-not-found")) {
         setIsFirebaseConfigError(true);
-        setError("Firebase Authentication is not activated in project voice-b3eea yet. Enable Google Sign-In in Firebase Console, or click Continue as Guest below.");
+        setError("Firebase Authentication is not activated in project voice-b3eea yet. Enable Google Sign-In in Firebase Console.");
       } else if (errCode === "auth/popup-closed-by-user" || msg.includes("popup-closed")) {
         // User closed popup
       } else if (errCode === "auth/popup-blocked" || msg.includes("popup-blocked")) {
@@ -161,20 +160,6 @@ export default function LoginPage() {
       }
     } finally {
       setGoogleLoading(false);
-    }
-  };
-
-  const handleGuestSignIn = async () => {
-    setError(null);
-    setGuestLoading(true);
-    try {
-      await createGuestSession();
-      window.location.href = getTargetPath();
-    } catch (err) {
-      console.error("Guest login error:", err);
-      setError("Unable to start guest session. Please try again.");
-    } finally {
-      setGuestLoading(false);
     }
   };
 
@@ -222,14 +207,6 @@ export default function LoginPage() {
                 >
                   Enable in Firebase Console <ExternalLink className="w-3.5 h-3.5" />
                 </a>
-                <button
-                  type="button"
-                  onClick={handleGuestSignIn}
-                  disabled={guestLoading}
-                  className="py-1 text-xs font-bold text-primary hover:underline text-center"
-                >
-                  Or continue instantly as Guest →
-                </button>
               </div>
             </div>
           )}
@@ -330,8 +307,8 @@ export default function LoginPage() {
             <div className="flex-1 h-px bg-outline-variant" />
           </div>
 
-          {/* Alternative Auth: Google & Guest */}
-          <div className="space-y-2.5">
+          {/* Alternative Auth: Google */}
+          <div>
             <button
               onClick={handleGoogleSignIn}
               disabled={googleLoading}
@@ -348,22 +325,6 @@ export default function LoginPage() {
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                   </svg>
                   Continue with Google
-                </>
-              )}
-            </button>
-
-            {/* Instant Guest Mode */}
-            <button
-              type="button"
-              onClick={handleGuestSignIn}
-              disabled={guestLoading}
-              className="w-full py-3 rounded-2xl bg-surface-container border border-primary/20 text-sm font-bold text-primary flex items-center justify-center gap-2 hover:bg-primary/10 transition-all disabled:opacity-60"
-            >
-              {guestLoading ? (
-                <span className="w-4 h-4 border-2 border-primary/40 border-t-primary rounded-full animate-spin" />
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" /> Continue as Guest (Instant Access)
                 </>
               )}
             </button>

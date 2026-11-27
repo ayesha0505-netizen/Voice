@@ -142,7 +142,7 @@ export function AvatarProvider({ children }: { children: ReactNode }) {
         return true;
       } catch (err) {
         console.error("Error saving avatar to MySQL:", err);
-        // In guest/demo mode, local persistence is already applied
+        // Local persistence is already applied in client storage
         return true;
       } finally {
         setIsSaving(false);

@@ -48,21 +48,25 @@ export function LeaderboardView() {
         console.error("Failed to load real leaderboard:", err);
       }
 
-      // Fallback: Real local user card
-      setScholars([
-        {
-          id: currentUser?.uid || "guest_scholar",
-          name: currentUser?.displayName || avatar.name || "Word Scholar",
-          role: avatar.role || "Owl Scholar",
-          avatarId: avatar.id,
-          level: Math.max(1, completedCount),
-          completedCount,
-          streakDays: streak,
-          wordsMastered: completedCount,
-          isCurrentUser: true,
-          rank: 1,
-        },
-      ]);
+      // Fallback: Real authenticated user card
+      if (currentUser?.uid) {
+        setScholars([
+          {
+            id: currentUser.uid,
+            name: currentUser.displayName || avatar.name || "Word Scholar",
+            role: avatar.role || "Owl Scholar",
+            avatarId: avatar.id,
+            level: Math.max(1, completedCount),
+            completedCount,
+            streakDays: streak,
+            wordsMastered: completedCount,
+            isCurrentUser: true,
+            rank: 1,
+          },
+        ]);
+      } else {
+        setScholars([]);
+      }
       setIsLoading(false);
     }
 

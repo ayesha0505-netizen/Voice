@@ -87,10 +87,10 @@ export function LevelProgressProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // 2. Guest or Server fallback: Load from localStorage
+    // 2. Offline client cache fallback: Load from localStorage
     if (typeof window !== "undefined") {
       try {
-        const userPrefix = userId ? `user_${userId}_` : "guest_";
+        const userPrefix = userId ? `user_${userId}_` : "";
         const savedUnlocked = localStorage.getItem(`${userPrefix}${LOCAL_STORAGE_UNLOCKED_KEY}`);
         const savedCompleted = localStorage.getItem(`${userPrefix}${LOCAL_STORAGE_COMPLETED_KEY}`);
 
@@ -165,7 +165,7 @@ export function LevelProgressProvider({ children }: { children: ReactNode }) {
         const updated = { ...prev, [level]: newCompletion };
         if (typeof window !== "undefined") {
           try {
-            const userPrefix = currentUser?.uid ? `user_${currentUser.uid}_` : "guest_";
+            const userPrefix = currentUser?.uid ? `user_${currentUser.uid}_` : "";
             localStorage.setItem(
               `${userPrefix}${LOCAL_STORAGE_COMPLETED_KEY}`,
               JSON.stringify(updated)
@@ -182,7 +182,7 @@ export function LevelProgressProvider({ children }: { children: ReactNode }) {
         );
         if (typeof window !== "undefined") {
           try {
-            const userPrefix = currentUser?.uid ? `user_${currentUser.uid}_` : "guest_";
+            const userPrefix = currentUser?.uid ? `user_${currentUser.uid}_` : "";
             localStorage.setItem(
               `${userPrefix}${LOCAL_STORAGE_UNLOCKED_KEY}`,
               String(nextMax)
